@@ -40,7 +40,7 @@ async def poll_scheduler():
     """Простой планировщик на asyncio"""
     while True:
         now = datetime.now().time()
-        target_time = time(0, 46)  # 00:46
+        target_time = time(1, 40)  # 00:46
         
         if now.hour == target_time.hour and now.minute == target_time.minute:
             await send_morning_poll()
@@ -59,3 +59,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
