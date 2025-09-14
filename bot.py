@@ -1,38 +1,23 @@
 import asyncio
+import logging
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
-from aiogram.types import PollOption
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
 import pytz
+import os
+from datetime import datetime, time
 
-# Добавьте в начало файла
-import logging
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# В функции main добавьте:
-async def main():
-    logging.info("Запуск бота...")
-    # остальной код...
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
-# Замените на ваш токен бота
-BOT_TOKEN = "8345910104:AAH5y2PSsom_SWSIjEFHgP71jo3ALIapXEA"
-# Замените на ID вашей группы (например: -1001234567890)
-CHAT_ID = "-1002941578906"
-
-# Инициализация бота и диспетчера
 bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher()  # Создаем Dispatcher без аргументов
+dp = Dispatcher()
 
-# Функция для отправки опроса
 async def send_morning_poll():
     question = "Сегодня"
-    options = [
-        "я  есть",
-        "нет по уважу",
-        "нет по неуважу",
-        "опаздываю"
-    ]
+    options = ["я есть", "нет по уважу", "нет по неуважу", "опаздываю"]
     
     try:
         await bot.send_poll(
@@ -42,36 +27,35 @@ async def send_morning_poll():
             is_anonymous=False,
             allows_multiple_answers=False
         )
-        print("Опрос отправлен успешно!")
+        logger.info("Опрос отправлен успешно!")
     except Exception as e:
-        print(f"Ошибка отправки опроса: {e}")
+        logger.error(f"Ошибка: {e}")
 
-# Функция для получения ID чата (новый синтаксис aiogram 3.x)
 @dp.message(Command("getid"))
 async def get_chat_id(message: types.Message):
     chat_id = message.chat.id
-    await message.reply(f"Chat ID этой группы: {chat_id}")
+    await message.reply(f"Chat ID: {chat_id}")
 
-# Настройка планировщика
-async def scheduler():
-    timezone = pytz.timezone("Europe/Moscow")  # Укажите вашу временную зону
-    scheduler = AsyncIOScheduler(timezone=timezone)
-    
-    # Отправлять каждый день в 9:00 утра
-    scheduler.add_job(
-        send_morning_poll,
-        trigger=CronTrigger(hour=1, minute=34 ),
-        misfire_grace_time=60
-    )
-    
-    scheduler.start()
+async def poll_scheduler():
+    """Простой планировщик на asyncio"""
+    while True:
+        now = datetime.now().time()
+        target_time = time(0, 46)  # 00:46
+        
+        if now.hour == target_time.hour and now.minute == target_time.minute:
+            await send_morning_poll()
+            # Ждем 61 секунду чтобы не отправить дважды
+            await asyncio.sleep(61)
+        else:
+            # Проверяем каждую минуту
+            await asyncio.sleep(60)
 
-# Запуск бота
 async def main():
-    await scheduler()
-    # Убедитесь, что бот инициализирован в диспетчере
+    # Запускаем планировщик в фоне
+    asyncio.create_task(poll_scheduler())
+    
+    logger.info("Бот запущен с простым планировщиком")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
-
     asyncio.run(main())
