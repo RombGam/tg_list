@@ -60,7 +60,7 @@ async def scheduler():
     # Отправлять каждый день в 9:00 утра
     scheduler.add_job(
         send_morning_poll,
-        trigger=CronTrigger(hour=1, minute=3 ),
+        trigger=CronTrigger(hour=1, minute=34 ),
         misfire_grace_time=60
     )
     
@@ -73,4 +73,5 @@ async def main():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
+
     asyncio.run(main())
